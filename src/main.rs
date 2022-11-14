@@ -16,6 +16,7 @@ fn main() {
     let stdin = std::io::stdin();
     let mut buffer: Vec<String> = vec![String::new()];
     let mut line_number: usize = 0;
+    let mut mode = Mode::Normal;
     write!(
         stdout,
         "{}{}",
@@ -25,7 +26,6 @@ fn main() {
     .unwrap();
     stdout.flush().unwrap();
     take_input(&mut stdout, stdin, &mut buffer, &mut line_number);
-    buffer.iter().for_each(|line| print!("{}", line));
     write_buffer_to_file(&buffer, &mut file);
 }
 
@@ -40,14 +40,14 @@ fn take_input(
             Key::Ctrl('c') => {
                 break;
             }
-            Key::Char('\t') => keys::tab(stdout, buffer, *line_number, 4),
+            Key::Char('\t') => keys::tab(stdout, &mut buffer[*line_number], 4),
             Key::Char('\n') => keys::enter(stdout, buffer, line_number),
             //Key::Esc => println!("ESC"),
-            Key::Char(c) => keys::insertion(stdout, buffer, c, *line_number),
+            Key::Char(c) => keys::insertion(stdout, &mut buffer[*line_number], c),
             Key::Left => keys::left(stdout),
             Key::Right => keys::right(stdout),
             Key::Up => keys::up(stdout, line_number),
-            Key::Down => keys::down(stdout, line_number),
+            Key::Down => keys::down(stdout, buffer.len(), line_number),
             Key::Backspace => keys::backspace(stdout, buffer, *line_number),
             _ => {}
         }
@@ -70,4 +70,9 @@ fn handle_command_invocation(args: &mut std::env::Args) -> Result<std::fs::File,
     } else {
         return File::create("no_name.txt");
     }
+}
+
+enum Mode {
+    Normal,
+    Insert,
 }
