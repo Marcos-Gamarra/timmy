@@ -49,16 +49,20 @@ fn take_input(
                     *mode = Mode::Normal;
                     write!(stdout, "{}", termion::cursor::SteadyBlock).unwrap();
                 }
-                Key::Char(c) => keys::insertion(stdout, &mut buffer[*line_number], c),
                 Key::Left => keys::left(stdout),
                 Key::Right => keys::right(stdout),
                 Key::Up => keys::up(stdout, line_number),
                 Key::Down => keys::down(stdout, buffer.len(), line_number),
                 Key::Backspace => keys::backspace(stdout, buffer, *line_number),
+                Key::Char(c) => keys::insertion(stdout, &mut buffer[*line_number], c),
                 _ => {}
             },
 
             Mode::Normal => match c.unwrap() {
+                Key::Left => keys::left(stdout),
+                Key::Right => keys::right(stdout),
+                Key::Up => keys::up(stdout, line_number),
+                Key::Down => keys::down(stdout, buffer.len(), line_number),
                 Key::Char('i') => {
                     *mode = Mode::Insert;
                     write!(stdout, "{}", termion::cursor::SteadyBar).unwrap();
