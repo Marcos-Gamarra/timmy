@@ -8,8 +8,8 @@ use std::io::Write;
 
 use std::env;
 
-mod keys;
 mod jump;
+mod keys;
 
 fn main() {
     let mut file = handle_command_invocation(&mut env::args()).unwrap();
@@ -39,31 +39,33 @@ fn take_input(
 ) {
     for c in stdin.keys() {
         match mode {
-            Mode::Insert => {
-                match c.unwrap() {
-                    Key::Ctrl('c') => {
-                        break;
-                    }
-                    Key::Char('\t') => keys::tab(stdout, &mut buffer[*line_number], 4),
-                    Key::Char('\n') => keys::enter(stdout, buffer, line_number),
-                    Key::Esc => *mode = Mode::Normal,
-                    Key::Char(c) => keys::insertion(stdout, &mut buffer[*line_number], c),
-                    Key::Left => keys::left(stdout),
-                    Key::Right => keys::right(stdout),
-                    Key::Up => keys::up(stdout, line_number),
-                    Key::Down => keys::down(stdout, buffer.len(), line_number),
-                    Key::Backspace => keys::backspace(stdout, buffer, *line_number),
-                    _ => {}
+            Mode::Insert => match c.unwrap() {
+                Key::Ctrl('c') => {
+                    break;
                 }
-            }
+                Key::Char('\t') => keys::tab(stdout, &mut buffer[*line_number], 4),
+                Key::Char('\n') => keys::enter(stdout, buffer, line_number),
+                Key::Esc => {
+                    *mode = Mode::Normal;
+                    write!(stdout, "{}", termion::cursor::SteadyBlock).unwrap();
+                }
+                Key::Char(c) => keys::insertion(stdout, &mut buffer[*line_number], c),
+                Key::Left => keys::left(stdout),
+                Key::Right => keys::right(stdout),
+                Key::Up => keys::up(stdout, line_number),
+                Key::Down => keys::down(stdout, buffer.len(), line_number),
+                Key::Backspace => keys::backspace(stdout, buffer, *line_number),
+                _ => {}
+            },
 
-            Mode::Normal => {
-                match c.unwrap() {
-                    Key::Char('i') => *mode = Mode::Insert,
-                    Key::Char('s') => jump::linewise_forward_jump(stdout, &buffer[*line_number]),
-                    _ => {}
+            Mode::Normal => match c.unwrap() {
+                Key::Char('i') => {
+                    *mode = Mode::Insert;
+                    write!(stdout, "{}", termion::cursor::SteadyBar).unwrap();
                 }
-            }
+                Key::Char('s') => jump::linewise_forward_jump(stdout, &buffer[*line_number]),
+                _ => {}
+            },
         }
 
         stdout.flush().unwrap();
