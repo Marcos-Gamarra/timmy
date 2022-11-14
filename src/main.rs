@@ -9,6 +9,7 @@ use std::io::Write;
 use std::env;
 
 mod keys;
+mod jump;
 
 fn main() {
     let mut file = handle_command_invocation(&mut env::args()).unwrap();
@@ -25,7 +26,7 @@ fn main() {
     )
     .unwrap();
     stdout.flush().unwrap();
-    take_input(&mut stdout, stdin, &mut buffer, &mut line_number);
+    take_input(&mut stdout, stdin, &mut buffer, &mut line_number, &mut mode);
     write_buffer_to_file(&buffer, &mut file);
 }
 
@@ -34,22 +35,35 @@ fn take_input(
     stdin: std::io::Stdin,
     buffer: &mut Vec<String>,
     line_number: &mut usize,
+    mode: &mut Mode,
 ) {
     for c in stdin.keys() {
-        match c.unwrap() {
-            Key::Ctrl('c') => {
-                break;
+        match mode {
+            Mode::Insert => {
+                match c.unwrap() {
+                    Key::Ctrl('c') => {
+                        break;
+                    }
+                    Key::Char('\t') => keys::tab(stdout, &mut buffer[*line_number], 4),
+                    Key::Char('\n') => keys::enter(stdout, buffer, line_number),
+                    Key::Esc => *mode = Mode::Normal,
+                    Key::Char(c) => keys::insertion(stdout, &mut buffer[*line_number], c),
+                    Key::Left => keys::left(stdout),
+                    Key::Right => keys::right(stdout),
+                    Key::Up => keys::up(stdout, line_number),
+                    Key::Down => keys::down(stdout, buffer.len(), line_number),
+                    Key::Backspace => keys::backspace(stdout, buffer, *line_number),
+                    _ => {}
+                }
             }
-            Key::Char('\t') => keys::tab(stdout, &mut buffer[*line_number], 4),
-            Key::Char('\n') => keys::enter(stdout, buffer, line_number),
-            //Key::Esc => println!("ESC"),
-            Key::Char(c) => keys::insertion(stdout, &mut buffer[*line_number], c),
-            Key::Left => keys::left(stdout),
-            Key::Right => keys::right(stdout),
-            Key::Up => keys::up(stdout, line_number),
-            Key::Down => keys::down(stdout, buffer.len(), line_number),
-            Key::Backspace => keys::backspace(stdout, buffer, *line_number),
-            _ => {}
+
+            Mode::Normal => {
+                match c.unwrap() {
+                    Key::Char('i') => *mode = Mode::Insert,
+                    Key::Char('s') => jump::linewise_forward_jump(stdout, &buffer[*line_number]),
+                    _ => {}
+                }
+            }
         }
 
         stdout.flush().unwrap();
