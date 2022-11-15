@@ -3,16 +3,21 @@ use termion::cursor::DetectCursorPos;
 use termion::raw::RawTerminal;
 
 //writes the character under the current cursor position
-pub fn insertion(stdout: &mut RawTerminal<Stdout>, current_line: &mut String, character: char) {
+pub fn insertion(
+    stdout: &mut RawTerminal<Stdout>,
+    current_line: &mut String,
+    character: char,
+    line_offset: usize,
+) {
     let (x, y) = stdout.cursor_pos().unwrap();
 
-    current_line.insert(x as usize - 1, character);
+    current_line.insert(x as usize - line_offset - 1, character);
 
     write!(
         stdout,
         "{}{}{}{}",
         termion::clear::CurrentLine,
-        termion::cursor::Goto(1, y),
+        termion::cursor::Goto(1 + line_offset as u16, y),
         current_line,
         termion::cursor::Goto(x + 1, y),
     )
@@ -89,6 +94,6 @@ pub fn tab(stdout: &mut RawTerminal<Stdout>, current_line: &mut String, number_o
     let (x, _y) = stdout.cursor_pos().unwrap();
     let distance_to_next_multiple = number_of_spaces - (x % 4) + 1;
     for _ in 0..distance_to_next_multiple {
-        insertion(stdout, current_line, ' ');
+        insertion(stdout, current_line, ' ', 0);
     }
 }
