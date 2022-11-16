@@ -1,25 +1,22 @@
-mod jump;
-mod keys;
+mod input;
 mod layout;
 mod modes;
 
-use layout::commandline::CommandLine;
+use layout::{commandline::CommandLine, content::Content};
 use modes::Mode;
 
-use std::fs::File;
-
-use termion::raw::{IntoRawMode, RawTerminal};
-
-use std::io::Write;
+use termion::raw::IntoRawMode;
 
 use std::env;
+use std::fs::File;
+use std::io::Write;
 
 fn main() {
     let mut file = handle_command_invocation(&mut env::args()).unwrap();
     let mut stdout = std::io::stdout().into_raw_mode().unwrap();
-    let mut buffer: Vec<String> = vec![String::new()];
-    let mut line_number: usize = 0;
-    let mut current_mode = modes::Mode::Normal;
+    let buffer: Vec<String> = vec![String::new()];
+    let mut commandline = CommandLine::new(String::new(), String::from(" > "));
+    let mut content = Content::new(buffer, 0, Mode::Normal, (0, 0), 0);
     write!(
         stdout,
         "{}{}",
@@ -28,32 +25,21 @@ fn main() {
     )
     .unwrap();
     stdout.flush().unwrap();
-    take_input(
-        &mut stdout,
-        &mut buffer,
-        &mut line_number,
-        &mut current_mode,
-    );
-    write_buffer_to_file(&buffer, &mut file);
+    take_input(&mut content, &mut commandline);
+    write_buffer_to_file(content.get_buffer(), &mut file);
 }
 
-fn take_input(
-    stdout: &mut RawTerminal<std::io::Stdout>,
-    buffer: &mut Vec<String>,
-    line_number: &mut usize,
-    current_mode: &mut Mode,
-) {
-    let mut command_line = CommandLine::new(String::new(), String::from(" > "));
+fn take_input(content: &mut Content, commandline: &mut CommandLine) {
     let mut is_running = true;
     while is_running {
-        match current_mode {
-            Mode::Insert => modes::handle_insert_mode(stdout, buffer, line_number, current_mode),
-            Mode::Normal => modes::handle_normal_mode(stdout, buffer, line_number, current_mode),
+        match *content.get_current_mode() {
+            Mode::Insert => content.handle_insert_mode(),
+            Mode::Normal => content.handle_normal_mode(),
             Mode::Command => {
-                is_running = modes::handle_command_mode(stdout, &mut command_line);
+                is_running = commandline.handle_command_mode();
             }
         }
-        stdout.flush().unwrap();
+        content.flush();
     }
 }
 

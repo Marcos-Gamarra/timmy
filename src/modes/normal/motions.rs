@@ -1,19 +1,9 @@
-use crate::Mode;
-
 use termion::event::Key;
 use termion::input::TermRead;
 use std::io::{Stdout, Write};
 use termion::cursor::DetectCursorPos;
 use termion::raw::RawTerminal;
 
-pub fn enter_insert_mode(stdout: &mut RawTerminal<Stdout>, current_mode: &mut Mode, forward: bool) {
-    let (mut x, y) = stdout.cursor_pos().unwrap();
-    if forward {
-        x += 1;
-    }
-    write!(stdout, "{}", termion::cursor::Goto(x, y)).unwrap();
-    *current_mode = Mode::Insert;
-}
 
 pub fn goto_end_of_line(stdout: &mut RawTerminal<Stdout>, current_line_len: usize) {
     let (_x, y) = stdout.cursor_pos().unwrap();
