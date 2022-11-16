@@ -2,6 +2,7 @@ pub mod normal;
 
 use crate::jump;
 use crate::keys;
+use crate::layout::commandline::CommandLine;
 use normal::motions;
 use termion::event::Key;
 use termion::input::TermRead;
@@ -90,8 +91,8 @@ pub fn handle_insert_mode(
             Key::Right => keys::right(stdout),
             Key::Up => keys::up(stdout, line_number),
             Key::Down => keys::down(stdout, buffer.len(), line_number),
-            Key::Backspace => keys::backspace(stdout, buffer, *line_number),
-            Key::Char(c) => keys::insertion(stdout, &mut buffer[*line_number], c, 0),
+            Key::Backspace => keys::backspace(stdout, &mut buffer[*line_number], 0),
+            Key::Char(c) => keys::insert_character(stdout, &mut buffer[*line_number], c, 0),
             _ => {}
         }
         stdout.flush().unwrap();
@@ -100,24 +101,14 @@ pub fn handle_insert_mode(
 
 pub fn handle_command_mode(
     stdout: &mut RawTerminal<std::io::Stdout>,
-    buffer: &mut Vec<String>,
-    line_number: &mut usize,
-    current_mode: &mut Mode,
-) -> String {
-    let mut command = String::new();
-
-    for c in std::io::stdin().keys() {
-        match c.unwrap() {
-            Key::Char('\t') => keys::tab(stdout, &mut buffer[*line_number], 4),
-            Key::Char('\n') => return command,
-            Key::Left => keys::left(stdout),
-            Key::Right => keys::right(stdout),
-            Key::Backspace => keys::backspace(stdout, buffer, *line_number),
-            Key::Char(c) => keys::insertion(stdout, &mut command, c, 1),
-            _ => {}
-        }
-        stdout.flush().unwrap();
+    command_line: &mut CommandLine,
+) -> bool {
+    command_line.render(stdout);
+    let command = command_line.get_value();
+    if command == "exit" {
+        command_line.clear_value();
+        return false;
     }
-
-    return String::new();
+    command_line.clear_value();
+    true
 }

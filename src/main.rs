@@ -1,7 +1,9 @@
 mod jump;
 mod keys;
+mod layout;
 mod modes;
 
+use layout::commandline::CommandLine;
 use modes::Mode;
 
 use std::fs::File;
@@ -41,15 +43,14 @@ fn take_input(
     line_number: &mut usize,
     current_mode: &mut Mode,
 ) {
-    loop {
+    let mut command_line = CommandLine::new(String::new(), String::from(" > "));
+    let mut is_running = true;
+    while is_running {
         match current_mode {
             Mode::Insert => modes::handle_insert_mode(stdout, buffer, line_number, current_mode),
             Mode::Normal => modes::handle_normal_mode(stdout, buffer, line_number, current_mode),
             Mode::Command => {
-                let command = modes::handle_command_mode(stdout, buffer, line_number, current_mode);
-                if command == "exit" {
-                    break;
-                }
+                is_running = modes::handle_command_mode(stdout, &mut command_line);
             }
         }
         stdout.flush().unwrap();

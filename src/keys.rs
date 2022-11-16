@@ -3,7 +3,7 @@ use termion::cursor::DetectCursorPos;
 use termion::raw::RawTerminal;
 
 //writes the character under the current cursor position
-pub fn insertion(
+pub fn insert_character(
     stdout: &mut RawTerminal<Stdout>,
     current_line: &mut String,
     character: char,
@@ -16,8 +16,8 @@ pub fn insertion(
     write!(
         stdout,
         "{}{}{}{}",
-        termion::clear::CurrentLine,
         termion::cursor::Goto(1 + line_offset as u16, y),
+        termion::clear::AfterCursor,
         current_line,
         termion::cursor::Goto(x + 1, y),
     )
@@ -42,21 +42,21 @@ pub fn enter(stdout: &mut RawTerminal<Stdout>, buffer: &mut Vec<String>, line_nu
     .unwrap();
 }
 
-pub fn backspace(stdout: &mut RawTerminal<Stdout>, buffer: &mut Vec<String>, line_number: usize) {
+pub fn backspace(stdout: &mut RawTerminal<Stdout>, current_line: &mut String, line_offset: usize) {
     let (x, y) = stdout.cursor_pos().unwrap();
 
-    if x == 1 {
+    if x == line_offset as u16 +1 {
         return;
     }
 
-    buffer[line_number].remove(x as usize - 2);
+    current_line.remove(x as usize - line_offset - 2);
 
     write!(
         stdout,
         "{}{}{}{}",
-        termion::clear::CurrentLine,
-        termion::cursor::Goto(1, y),
-        buffer[line_number],
+        termion::cursor::Goto(line_offset as u16 +1, y),
+        termion::clear::AfterCursor,
+        current_line,
         termion::cursor::Goto(x - 1, y)
     )
     .unwrap();
@@ -94,6 +94,6 @@ pub fn tab(stdout: &mut RawTerminal<Stdout>, current_line: &mut String, number_o
     let (x, _y) = stdout.cursor_pos().unwrap();
     let distance_to_next_multiple = number_of_spaces - (x % 4) + 1;
     for _ in 0..distance_to_next_multiple {
-        insertion(stdout, current_line, ' ', 0);
+        insert_character(stdout, current_line, ' ', 0);
     }
 }
