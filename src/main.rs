@@ -1,8 +1,12 @@
 mod input;
-mod layout;
+mod buffer;
+mod commandline;
 mod modes;
+mod motions;
+mod rendering;
 
-use layout::{buffer::Buffer, commandline::CommandLine};
+use buffer::Buffer;
+use commandline::CommandLine;
 use modes::Mode;
 
 use termion::raw::IntoRawMode;
@@ -17,7 +21,7 @@ fn main() {
     let buffer: Vec<String> = vec![String::new()];
     let term_size = termion::terminal_size().unwrap();
     let mut commandline = CommandLine::new(String::new(), String::from(" > "), (1, term_size.1));
-    let mut content = Buffer::new(buffer, 0, Mode::Normal, (1, 1), term_size, 0);
+    let mut content = Buffer::new(buffer, 1, Mode::Normal, (1, 1), term_size, 0);
     write!(
         stdout,
         "{}{}",

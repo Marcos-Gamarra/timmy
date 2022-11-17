@@ -1,5 +1,5 @@
-use super::rendering::Render;
 use crate::input::Input;
+use crate::rendering::Render;
 use std::io::Write;
 use termion::event::Key;
 use termion::input::TermRead;

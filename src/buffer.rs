@@ -1,7 +1,6 @@
-use super::rendering::Render;
-use crate::input::{self, Input};
-use crate::modes::normal::motions;
+use crate::input::Input;
 use crate::modes::{switch_modes, Mode};
+use crate::rendering::Render;
 
 use std::io::Write;
 use termion::event::Key;
@@ -45,10 +44,6 @@ impl Buffer {
 
     pub fn flush(&mut self) {
         self.stdout.flush().unwrap();
-    }
-
-    pub fn cursor_position(&self) -> (u16, u16) {
-        self.cursor_position.clone()
     }
 
     pub fn cursor_position_mut(&mut self) -> &mut (u16, u16) {
@@ -122,11 +117,25 @@ impl Buffer {
 
 impl Render for Buffer {
     fn render(&mut self) {
-        write!(self.stdout, "{}", termion::cursor::Goto(1, 1)).unwrap();
+        let mut y = 1;
+        write!(
+            self.stdout,
+            "{}{}",
+            termion::cursor::Goto(1, 1),
+            termion::clear::All
+        )
+        .unwrap();
         for line in self.content.iter_mut() {
-            write!(self.stdout, "{}", line).unwrap();
+            y += 1;
+            write!(self.stdout, "{}{}", line, termion::cursor::Goto(1, y)).unwrap();
         }
-        write!(self.stdout, "{}", termion::clear::AfterCursor).unwrap();
+        write!(
+            self.stdout,
+            "{}{}",
+            termion::clear::AfterCursor,
+            termion::cursor::Goto(self.cursor_position.0, self.cursor_position.1),
+        )
+        .unwrap();
         self.stdout.flush().unwrap();
     }
 }
@@ -134,7 +143,7 @@ impl Render for Buffer {
 impl Input for Buffer {
     fn insert_character(&mut self, character: char) {
         let (x, _) = self.cursor_position;
-        let current_line = &mut self.content[self.current_line_number];
+        let current_line = &mut self.content[self.current_line_number - 1];
         current_line.insert((x - self.left_offset - 1) as usize, character);
 
         let (x_mut, _) = self.cursor_position_mut();
@@ -151,9 +160,25 @@ impl Input for Buffer {
         }
     }
 
+    //insterts a newline at the current cursor position
+    //right_side holds the characters to the right of the cursor
+    //the current line is set to hold the left side of the line
+    //right_side is pushed to the buffer after the current line
+    //the cursor is updated
     fn enter(&mut self) {
         self.insert_character('\n');
+
+        let right_side = self.content[self.current_line_number - 1]
+            [self.cursor_position.0 as usize - 1..]
+            .to_string();
+
+        self.content[self.current_line_number - 1] = self.content[self.current_line_number - 1]
+            [..self.cursor_position.0 as usize - 1]
+            .to_string();
+
+        self.content.insert(self.current_line_number, right_side);
         self.cursor_position.1 += 1;
+        self.cursor_position.0 = 1;
         self.current_line_number += 1;
     }
 
@@ -190,6 +215,9 @@ impl Input for Buffer {
     }
 
     fn right(&mut self) {
+        if self.cursor_position.0 as usize >= self.content[self.current_line_number - 1].len() + 1{
+            return;
+        }
         self.cursor_position.0 += 1;
     }
 
@@ -198,7 +226,7 @@ impl Input for Buffer {
             return;
         }
 
-        self.content[self.current_line_number]
+        self.content[self.current_line_number - 1]
             .remove((self.cursor_position.0 - self.left_offset - 2) as usize);
 
         self.cursor_position.0 -= 1;

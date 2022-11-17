@@ -1,7 +1,5 @@
-pub mod normal;
-use crate::layout::buffer::Buffer;
+use crate::buffer::Buffer;
 use std::io::Write;
-use termion::raw::RawTerminal;
 
 pub enum Mode {
     Normal,
