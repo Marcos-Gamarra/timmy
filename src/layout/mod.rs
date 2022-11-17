@@ -1,2 +1,3 @@
 pub mod commandline;
-pub mod content;
+pub mod buffer;
+pub mod rendering;

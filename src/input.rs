@@ -2,65 +2,17 @@ use std::io::{Stdout, Write};
 use termion::cursor::DetectCursorPos;
 use termion::raw::RawTerminal;
 
-//writes the character under the current cursor position
-pub fn insert_character(
-    stdout: &mut RawTerminal<Stdout>,
-    current_line: &mut String,
-    character: char,
-    line_offset: usize,
-) {
-    let (x, y) = stdout.cursor_pos().unwrap();
-
-    current_line.insert(x as usize - line_offset - 1, character);
-
-    write!(
-        stdout,
-        "{}{}{}{}",
-        termion::cursor::Goto(1 + line_offset as u16, y),
-        termion::clear::AfterCursor,
-        current_line,
-        termion::cursor::Goto(x + 1, y),
-    )
-    .unwrap();
+pub trait Input {
+    fn insert_character(&mut self, character: char);
+    fn tab(&mut self, _number_of_spaces: u16) {}
+    fn enter(&mut self) {}
+    fn backspace(&mut self) {}
+    fn right(&mut self) {}
+    fn left(&mut self) {}
+    fn up(&mut self) {}
+    fn down(&mut self) {}
 }
 
-//handles enter key:
-//pushes '\n' to current line, increase line_number by one,
-//inserts new empty line into buffer and moves the cursor
-//to the left most of the new line
-pub fn enter(stdout: &mut RawTerminal<Stdout>, buffer: &mut Vec<String>, line_number: &mut usize) {
-    let (x, _y) = stdout.cursor_pos().unwrap();
-    let x = x as usize - 1;
-    buffer[*line_number].insert(x, '\n');
-    *line_number += 1;
-    buffer.insert(*line_number, String::new());
-    write!(
-        stdout,
-        "{}",
-        termion::cursor::Goto(1, *line_number as u16 + 1)
-    )
-    .unwrap();
-}
-
-pub fn backspace(stdout: &mut RawTerminal<Stdout>, current_line: &mut String, line_offset: usize) {
-    let (x, y) = stdout.cursor_pos().unwrap();
-
-    if x == line_offset as u16 +1 {
-        return;
-    }
-
-    current_line.remove(x as usize - line_offset - 2);
-
-    write!(
-        stdout,
-        "{}{}{}{}",
-        termion::cursor::Goto(line_offset as u16 +1, y),
-        termion::clear::AfterCursor,
-        current_line,
-        termion::cursor::Goto(x - 1, y)
-    )
-    .unwrap();
-}
 
 pub fn right(stdout: &mut RawTerminal<Stdout>) {
     let (x, y) = stdout.cursor_pos().unwrap();
@@ -88,12 +40,4 @@ pub fn down(stdout: &mut RawTerminal<Stdout>, buffer_len: usize, line_number: &m
     }
     *line_number += 1;
     write!(stdout, "{}", termion::cursor::Goto(x, y + 1)).unwrap();
-}
-
-pub fn tab(stdout: &mut RawTerminal<Stdout>, current_line: &mut String, number_of_spaces: u16) {
-    let (x, _y) = stdout.cursor_pos().unwrap();
-    let distance_to_next_multiple = number_of_spaces - (x % 4) + 1;
-    for _ in 0..distance_to_next_multiple {
-        insert_character(stdout, current_line, ' ', 0);
-    }
 }

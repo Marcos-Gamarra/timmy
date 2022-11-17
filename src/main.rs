@@ -2,7 +2,7 @@ mod input;
 mod layout;
 mod modes;
 
-use layout::{commandline::CommandLine, content::Content};
+use layout::{buffer::Buffer, commandline::CommandLine};
 use modes::Mode;
 
 use termion::raw::IntoRawMode;
@@ -15,8 +15,9 @@ fn main() {
     let mut file = handle_command_invocation(&mut env::args()).unwrap();
     let mut stdout = std::io::stdout().into_raw_mode().unwrap();
     let buffer: Vec<String> = vec![String::new()];
-    let mut commandline = CommandLine::new(String::new(), String::from(" > "));
-    let mut content = Content::new(buffer, 0, Mode::Normal, (0, 0), 0);
+    let term_size = termion::terminal_size().unwrap();
+    let mut commandline = CommandLine::new(String::new(), String::from(" > "), (1, term_size.1));
+    let mut content = Buffer::new(buffer, 0, Mode::Normal, (1, 1), term_size, 0);
     write!(
         stdout,
         "{}{}",
@@ -26,20 +27,20 @@ fn main() {
     .unwrap();
     stdout.flush().unwrap();
     take_input(&mut content, &mut commandline);
-    write_buffer_to_file(content.get_buffer(), &mut file);
+    write_buffer_to_file(content.buffer(), &mut file);
 }
 
-fn take_input(content: &mut Content, commandline: &mut CommandLine) {
+fn take_input(buffer: &mut Buffer, commandline: &mut CommandLine) {
     let mut is_running = true;
     while is_running {
-        match *content.get_current_mode() {
-            Mode::Insert => content.handle_insert_mode(),
-            Mode::Normal => content.handle_normal_mode(),
+        match *buffer.current_mode() {
+            Mode::Insert => buffer.handle_insert_mode(),
+            Mode::Normal => buffer.handle_normal_mode(),
             Mode::Command => {
                 is_running = commandline.handle_command_mode();
             }
         }
-        content.flush();
+        buffer.flush();
     }
 }
 
