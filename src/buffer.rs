@@ -153,7 +153,7 @@ impl Input for Buffer {
     fn tab(&mut self, number_of_spaces: u16) {
         let (x, _y) = &mut self.cursor_position;
         let distance_to_next_multiple = number_of_spaces - (*x % 4) + 1;
-        let current_line = &mut self.content[self.current_line_number];
+        let current_line = &mut self.content[self.current_line_number - 1];
         for _ in 0..distance_to_next_multiple {
             current_line.push(' ');
             *x += 1;
@@ -161,20 +161,17 @@ impl Input for Buffer {
     }
 
     //insterts a newline at the current cursor position
-    //right_side holds the characters to the right of the cursor
+    //right_side holds the characters to the right of the newline character that is being inserted
     //the current line is set to hold the left side of the line
     //right_side is pushed to the buffer after the current line
     //the cursor is updated
     fn enter(&mut self) {
         self.insert_character('\n');
+        let current_line = &mut self.content[self.current_line_number - 1];
+        let x = self.cursor_position.0 as usize;
 
-        let right_side = self.content[self.current_line_number - 1]
-            [self.cursor_position.0 as usize - 1..]
-            .to_string();
-
-        self.content[self.current_line_number - 1] = self.content[self.current_line_number - 1]
-            [..self.cursor_position.0 as usize - 1]
-            .to_string();
+        let right_side = current_line[x - 1..].to_string();
+        *current_line = current_line[..x - 1].to_string();
 
         self.content.insert(self.current_line_number, right_side);
         self.cursor_position.1 += 1;
@@ -187,7 +184,7 @@ impl Input for Buffer {
             return;
         }
 
-        if self.cursor_position.1 != 1 {
+        if self.cursor_position.1 > 1 {
             self.cursor_position.1 -= 1
         }
 
@@ -215,7 +212,7 @@ impl Input for Buffer {
     }
 
     fn right(&mut self) {
-        if self.cursor_position.0 as usize >= self.content[self.current_line_number - 1].len() + 1{
+        if self.cursor_position.0 as usize >= self.content[self.current_line_number - 1].len() + 1 {
             return;
         }
         self.cursor_position.0 += 1;
