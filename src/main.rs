@@ -18,7 +18,7 @@ use std::io::Write;
 fn main() {
     let mut file = handle_command_invocation(&mut env::args()).unwrap();
     let mut stdout = std::io::stdout().into_raw_mode().unwrap();
-    let buffer: Vec<String> = vec![String::new()];
+    let buffer: Vec<String> = vec![String::from("\n")];
     let term_size = termion::terminal_size().unwrap();
     let mut commandline = CommandLine::new(String::new(), String::from(" > "), (1, term_size.1));
     let mut content = Buffer::new(buffer, 1, Mode::Normal, (1, 1), term_size, 0);
