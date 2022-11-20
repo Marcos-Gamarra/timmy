@@ -1,13 +1,9 @@
-mod input;
 mod buffer;
 mod commandline;
-mod modes;
-mod motions;
-mod rendering;
 
 use buffer::Buffer;
 use commandline::CommandLine;
-use modes::Mode;
+use buffer::Mode;
 
 use termion::raw::IntoRawMode;
 

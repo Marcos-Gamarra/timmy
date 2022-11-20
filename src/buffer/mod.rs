@@ -1,6 +1,12 @@
-use crate::input::Input;
-use crate::modes::{switch_modes, Mode};
-use crate::rendering::Render;
+mod modes;
+mod commands;
+mod rendering;
+mod motions;
+
+pub use modes::Mode;
+
+use modes::switch_mode;
+use rendering::Render;
 
 use std::io::Write;
 use termion::event::Key;
@@ -108,7 +114,7 @@ impl Buffer {
                 Key::Char('\t') => self.tab(4),
                 Key::Char('\n') => self.enter(),
                 Key::Esc => {
-                    switch_modes(self, Mode::Normal);
+                    switch_mode(self, Mode::Normal);
                     break;
                 }
                 Key::Left => self.left(),
@@ -134,11 +140,11 @@ impl Buffer {
                 Key::Down => self.down(),
 
                 Key::Char('i') => {
-                    switch_modes(self, Mode::Insert);
+                    switch_mode(self, Mode::Insert);
                     break;
                 }
                 Key::Char(':') => {
-                    switch_modes(self, Mode::Command);
+                    switch_mode(self, Mode::Command);
                     break;
                 }
                 //Key::Char('s') => {
@@ -180,119 +186,4 @@ impl Render for Buffer {
     }
 }
 
-impl Input for Buffer {
-    fn insert_character(&mut self, character: char) {
-        let (x, y) = self.cursor_position();
-        let left_offset = self.left_offest();
-        let current_line = self.current_line_mut();
-        current_line.insert((x - left_offset - 1) as usize, character);
 
-        self.set_cursor_position(x + 1, y);
-    }
-
-    //inserts a newline at the current cursor position
-    //right_side holds the characters to the right of the newline character that is being inserted
-    //the current line is set to hold the left side of the line
-    //right_side is pushed to the buffer after the current line
-    //the cursor is updated
-    fn enter(&mut self) {
-        let (x, y) = self.cursor_position();
-        let current_line_number = self.current_line_number();
-
-        if self.is_current_line_empty() {
-            self.insert_line(current_line_number + 1, String::from("\n"));
-            self.set_cursor_position(x, y + 1);
-            self.set_current_line_number(current_line_number + 1);
-            return;
-        }
-
-        let current_line = self.current_line_mut();
-
-        let right_side = current_line[x as usize - 1..].to_string();
-        *current_line = current_line[..x as usize - 1].to_string();
-        current_line.push('\n');
-
-        self.insert_line(current_line_number + 1, right_side);
-        self.set_cursor_position(1, y + 1);
-        self.set_current_line_number(current_line_number + 1);
-    }
-
-    fn up(&mut self) {
-        if self.current_line_number > 1 {
-            self.current_line_number -= 1;
-        } else {
-            return;
-        }
-
-        if self.cursor_position.1 > 1 {
-            self.cursor_position.1 -= 1
-        }
-
-        let current_line_len = self.current_line_len() as u16;
-        let (x, y) = self.cursor_position();
-        if current_line_len < x {
-            self.set_cursor_position(current_line_len, y);
-        }
-    }
-
-    fn down(&mut self) {
-        let total_number_of_lines = self.total_number_of_lines();
-        let current_line_number = self.current_line_number();
-
-        if current_line_number < total_number_of_lines {
-            self.current_line_number += 1;
-        } else {
-            return;
-        }
-
-        if self.cursor_position.1 < self.screen_size.1 {
-            self.cursor_position.1 += 1;
-        }
-
-        let current_line_len = self.current_line_len() as u16;
-        let (x, y) = self.cursor_position();
-
-        if current_line_len < x {
-            self.set_cursor_position(current_line_len, y);
-        }
-    }
-
-    fn left(&mut self) {
-        if self.cursor_position.0 == 1 {
-            return;
-        }
-
-        self.cursor_position.0 -= 1;
-    }
-
-    fn right(&mut self) {
-        let (x, y) = self.cursor_position();
-        let current_line_len = self.current_line_len();
-        if x as usize >= current_line_len {
-            return;
-        }
-
-        self.set_cursor_position(x + 1, y);
-    }
-
-    fn backspace(&mut self) {
-        if self.cursor_position.0 == self.left_offset as u16 + 1 {
-            return;
-        }
-
-        self.content[self.current_line_number - 1]
-            .remove((self.cursor_position.0 - self.left_offset - 2) as usize);
-
-        self.cursor_position.0 -= 1;
-    }
-
-    fn tab(&mut self, number_of_spaces: u16) {
-        let (x, _y) = &mut self.cursor_position;
-        let distance_to_next_multiple = number_of_spaces - (*x % 4) + 1;
-        let current_line = &mut self.content[self.current_line_number - 1];
-        for _ in 0..distance_to_next_multiple {
-            current_line.push(' ');
-            *x += 1;
-        }
-    }
-}

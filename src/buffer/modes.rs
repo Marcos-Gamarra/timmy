@@ -1,4 +1,4 @@
-use crate::buffer::Buffer;
+use super::Buffer;
 use std::io::Write;
 
 pub enum Mode {
@@ -7,7 +7,7 @@ pub enum Mode {
     Command,
 }
 
-pub fn switch_modes(buffer: &mut Buffer, new_mode: Mode) {
+pub fn switch_mode(buffer: &mut Buffer, new_mode: Mode) {
     match new_mode {
         Mode::Normal => {
             buffer.set_current_mode(Mode::Normal);

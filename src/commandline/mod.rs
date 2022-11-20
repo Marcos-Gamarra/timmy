@@ -1,6 +1,6 @@
-use crate::input::Input;
-use crate::rendering::Render;
-use std::io::Write;
+mod rendering;
+mod commands;
+
 use termion::event::Key;
 use termion::input::TermRead;
 use termion::raw::{IntoRawMode, RawTerminal};
@@ -51,38 +51,5 @@ impl CommandLine {
     }
 }
 
-impl Render for CommandLine {
-    fn render(&mut self) {
-        write!(
-            self.stdout,
-            "{}{}{}{}",
-            termion::cursor::Goto(1, self.cursor_position.1),
-            self.prompt,
-            self.value,
-            termion::clear::AfterCursor,
-        )
-        .unwrap();
-        self.stdout.flush().unwrap();
-    }
-}
 
-impl Input for CommandLine {
-    fn insert_character(&mut self, character: char) {
-        self.value.insert(
-            self.cursor_position.0 as usize - self.prompt.len() - 1,
-            character,
-        );
 
-        self.cursor_position.0 += 1;
-    }
-
-    fn backspace(&mut self) {
-        if self.value.len() == 0 {
-            return;
-        }
-
-        self.value
-            .remove(self.cursor_position.0 as usize - self.prompt.len() - 2);
-        self.cursor_position.0 -= 1;
-    }
-}
