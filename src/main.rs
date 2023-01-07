@@ -1,61 +1,55 @@
-mod buffer;
-mod commandline;
-
-use buffer::Buffer;
-use commandline::CommandLine;
-use buffer::Mode;
-
+use std::io::{stdin, stdout, Write};
+use termion::event::Key;
+use termion::input::TermRead;
 use termion::raw::IntoRawMode;
 
-use std::env;
-use std::fs::File;
-use std::io::Write;
+mod buffer;
+mod cursor;
+mod keys;
+
+use buffer::Buffer;
 
 fn main() {
-    let mut file = handle_command_invocation(&mut env::args()).unwrap();
-    let mut stdout = std::io::stdout().into_raw_mode().unwrap();
-    let buffer: Vec<String> = vec![String::from("\n")];
-    let term_size = termion::terminal_size().unwrap();
-    let mut commandline = CommandLine::new(String::new(), String::from(" > "), (1, term_size.1));
-    let mut content = Buffer::new(buffer, 1, Mode::Normal, (1, 1), term_size, 0);
+    let stdin = stdin();
+    let mut stdout = stdout().into_raw_mode().unwrap();
+    let mut buffer = Buffer::new();
+
     write!(
         stdout,
         "{}{}",
         termion::clear::All,
-        termion::cursor::Goto(1, 1),
+        termion::cursor::Goto(1, 1)
     )
     .unwrap();
     stdout.flush().unwrap();
-    take_input(&mut content, &mut commandline);
-    write_buffer_to_file(content.buffer(), &mut file);
-}
 
-fn take_input(buffer: &mut Buffer, commandline: &mut CommandLine) {
-    let mut is_running = true;
-    while is_running {
-        match *buffer.current_mode() {
-            Mode::Insert => buffer.handle_insert_mode(),
-            Mode::Normal => buffer.handle_normal_mode(),
-            Mode::Command => {
-                is_running = commandline.handle_command_mode();
+    for c in stdin.keys() {
+        match c.unwrap() {
+            Key::Char('q') => break,
+            //Key::Char(c) => print!("{}", c),
+            Key::Char('\n') => {
+                keys::enter(&mut buffer);
             }
+            Key::Char(c) => {
+                buffer.insert_char(c);
+            }
+            Key::Alt(c) => println!("^{}", c),
+            Key::Ctrl(c) => println!("*{}", c),
+            Key::Esc => println!("ESC"),
+            Key::Left => {
+                keys::left(&mut buffer);
+            }
+            Key::Right => {
+                keys::right(&mut buffer);
+            }
+            Key::Up => println!("↑"),
+            Key::Down => println!("↓"),
+            Key::Backspace => {
+                buffer.remove_char();
+            }
+            _ => {}
         }
-        buffer.flush();
-    }
-}
-
-fn write_buffer_to_file(buffer: &Vec<String>, file: &mut File) {
-    for line in buffer {
-        write!(file, "{}", line).unwrap();
-    }
-}
-
-fn handle_command_invocation(args: &mut std::env::Args) -> Result<std::fs::File, std::io::Error> {
-    if let Some(mut first_arg) = args.nth(1) {
-        first_arg = first_arg.to_string();
-        println!("{}", first_arg);
-        return File::create(first_arg);
-    } else {
-        return File::create("no_name.txt");
+        buffer.render();
+        stdout.flush().unwrap();
     }
 }
