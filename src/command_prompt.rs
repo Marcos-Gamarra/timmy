@@ -38,13 +38,13 @@ impl CommandPrompt {
     }
 
     pub fn render(&self) {
-        //get terminal size
         let (_, y) = termion::terminal_size().unwrap();
         write!(
             stdout(),
             "{}{}{}{}",
-            termion::clear::All,
+            //clear line
             termion::cursor::Goto(1, y - 1),
+            termion::clear::CurrentLine,
             " > ",
             self.body,
         )

@@ -25,7 +25,7 @@ fn main() {
     )
     .unwrap();
     stdout.flush().unwrap();
-
+    buffer.read_file("test_file");
     loop {
         match buffer.mode() {
             Mode::Insert => modes::insert_mode(&mut buffer),

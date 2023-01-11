@@ -1,6 +1,6 @@
 use crate::cursor::{Cursor, CursorShape};
 use crate::modes::Mode;
-use std::io::{stdout, BufRead, BufReader, Write};
+use std::io::{stdout, Write};
 
 pub struct Buffer {
     body: Vec<String>,
@@ -64,22 +64,11 @@ impl Buffer {
                 self.cursor.change_shape(CursorShape::Bar);
             }
 
-            _ => {}
+            _ => {},
         }
         self.mode = mode;
     }
-
-    pub fn read_file(&mut self, file_name: &str) {
-        let content = std::fs::read_to_string(file_name).unwrap();
-        self.body = content
-            .lines()
-            .map(|line| {
-                let mut line = line.to_string();
-                line.push_str("\r\n");
-                line
-            })
-            .collect();
-    }
+    
 
     pub fn render(&self) {
         write!(
