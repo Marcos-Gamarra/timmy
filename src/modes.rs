@@ -1,5 +1,4 @@
 use crate::buffer::Buffer;
-use crate::cursor::CursorShape;
 use crate::command_prompt::{Command, CommandPrompt};
 use crate::keys;
 use termion::event::Key;
@@ -25,8 +24,8 @@ pub fn insert_mode(buffer: &mut Buffer) {
             }
             Key::Left => keys::left(buffer),
             Key::Right => keys::right(buffer),
-            Key::Up => println!("↑"),
-            Key::Down => println!("↓"),
+            Key::Up => keys::up(buffer),
+            Key::Down => keys::down(buffer),
             Key::Backspace => buffer.remove_char(),
             _ => {}
         }

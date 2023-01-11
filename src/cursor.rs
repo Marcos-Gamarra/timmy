@@ -21,12 +21,17 @@ impl Cursor {
         }
     }
 
-    pub fn set_position(&mut self, x: usize, y: usize) {
+    //changes the cursor position to the given x and y, and returns
+    //the difference between the new position and the old position
+    pub fn change_position(&mut self, x: usize, y: usize) -> (i32, i32) {
+        let (diff_x, diff_y) = (x as i32 - self.x as i32, y as i32 - self.y as i32);
         self.x = x;
         self.y = y;
+
+        (diff_x, diff_y)
     }
 
-    pub fn get_position(&self) -> (usize, usize) {
+    pub fn position(&self) -> (usize, usize) {
         (self.x, self.y)
     }
 
