@@ -1,10 +1,12 @@
-use crate::cursor::Cursor;
+use crate::cursor::{Cursor, CursorShape};
+use crate::modes::Mode;
 use std::io::{stdout, Write};
 
 pub struct Buffer {
     body: Vec<String>,
     current_line_number: usize,
     cursor: Cursor,
+    mode: Mode,
 }
 
 impl Buffer {
@@ -13,6 +15,7 @@ impl Buffer {
             body: vec![String::new()],
             current_line_number: 0,
             cursor: Cursor::new(),
+            mode: Mode::Normal,
         }
     }
 
@@ -48,6 +51,25 @@ impl Buffer {
         &self.body[self.current_line_number]
     }
 
+    pub fn mode(&self) -> Mode {
+        self.mode
+    }
+
+    pub fn change_mode(&mut self, mode: Mode) {
+        match mode {
+            Mode::Normal => {
+                self.cursor.change_shape(CursorShape::Block);
+            }
+            Mode::Insert => {
+                self.cursor.change_shape(CursorShape::Bar);
+            }
+
+            _ => {},
+        }
+        self.mode = mode;
+    }
+    
+
     pub fn render(&self) {
         write!(
             stdout(),
@@ -58,5 +80,6 @@ impl Buffer {
         )
         .unwrap();
         self.cursor.render();
+        stdout().flush().unwrap();
     }
 }

@@ -1,18 +1,21 @@
-use std::io::{stdin, stdout, Write};
-use termion::event::Key;
-use termion::input::TermRead;
+use std::io::{stdout, Write};
 use termion::raw::IntoRawMode;
 
 mod buffer;
+mod command_prompt;
 mod cursor;
 mod keys;
+mod modes;
 
 use buffer::Buffer;
+use command_prompt::CommandPrompt;
+use modes::Mode;
 
 fn main() {
-    let stdin = stdin();
     let mut stdout = stdout().into_raw_mode().unwrap();
     let mut buffer = Buffer::new();
+    let mut exit_flag = false;
+    let mut command_prompt = CommandPrompt::new();
 
     write!(
         stdout,
@@ -23,33 +26,17 @@ fn main() {
     .unwrap();
     stdout.flush().unwrap();
 
-    for c in stdin.keys() {
-        match c.unwrap() {
-            Key::Char('q') => break,
-            //Key::Char(c) => print!("{}", c),
-            Key::Char('\n') => {
-                keys::enter(&mut buffer);
+    loop {
+        match buffer.mode() {
+            Mode::Insert => modes::insert_mode(&mut buffer),
+            Mode::Normal => modes::normal_mode(&mut buffer),
+            Mode::Command => {
+                modes::command_mode(&mut buffer, &mut command_prompt, &mut exit_flag);
             }
-            Key::Char(c) => {
-                buffer.insert_char(c);
-            }
-            Key::Alt(c) => println!("^{}", c),
-            Key::Ctrl(c) => println!("*{}", c),
-            Key::Esc => println!("ESC"),
-            Key::Left => {
-                keys::left(&mut buffer);
-            }
-            Key::Right => {
-                keys::right(&mut buffer);
-            }
-            Key::Up => println!("↑"),
-            Key::Down => println!("↓"),
-            Key::Backspace => {
-                buffer.remove_char();
-            }
-            _ => {}
         }
-        buffer.render();
-        stdout.flush().unwrap();
+
+        if exit_flag {
+            break;
+        }
     }
 }
