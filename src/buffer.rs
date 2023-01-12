@@ -8,6 +8,7 @@ pub struct Buffer {
     cursor: Cursor,
     mode: Mode,
     term_size: (usize, usize),
+    on_screen_range: (usize, usize),
 }
 
 impl Buffer {
@@ -19,6 +20,7 @@ impl Buffer {
             cursor: Cursor::new(),
             mode: Mode::Normal,
             term_size: (term_x as usize, term_y as usize),
+            on_screen_range: (0, term_y as usize - 1),
         }
     }
 
@@ -44,6 +46,22 @@ impl Buffer {
         let line = &mut self.body[self.current_line_number];
         line.remove(cursor_x - 1);
         self.cursor.change_position(cursor_x - 1, cursor_y);
+    }
+
+    pub fn is_first_line(&self) -> bool {
+        if self.current_line_number == 0 {
+            return true;
+        }
+
+        false
+    }
+
+    pub fn is_last_line(&self) -> bool {
+        if self.current_line_number == self.body.len() - 1 {
+            return true;
+        }
+
+        false
     }
 
     pub fn change_cursor_position(&mut self, x: usize, y: usize) {
@@ -72,8 +90,17 @@ impl Buffer {
         self.mode
     }
 
-    pub fn number_of_lines(&self) -> usize {
-        self.body.len()
+    pub fn change_on_screen_range(&mut self, delta: isize) {
+        self.current_line_number = (self.current_line_number as isize + delta) as usize;
+        self.on_screen_range = (
+            (self.on_screen_range.0 as isize + delta) as usize,
+            (self.on_screen_range.1 as isize + delta) as usize,
+        );
+         
+    }
+
+    pub fn term_size(&self) -> (usize, usize) {
+        self.term_size
     }
 
     pub fn change_mode(&mut self, mode: Mode) {
@@ -110,7 +137,8 @@ impl Buffer {
             termion::cursor::Goto(1, 1),
         )
         .unwrap();
-        for i in 0..self.term_size.1 - 1 {
+
+        for i in self.on_screen_range.0..self.on_screen_range.1 {
             print!("{}", self.body[i]);
         }
         self.cursor.render();

@@ -26,17 +26,31 @@ pub fn right(buffer: &mut Buffer) {
 pub fn up(buffer: &mut Buffer) {
     let cursor = buffer.cursor();
     let (cursor_x, cursor_y) = cursor.position();
-    if cursor_y == 0 {
+
+    if buffer.is_first_line() {
         return;
     }
+
+    if cursor_y == 0 {
+        buffer.change_on_screen_range(-1);
+        return;
+    }
+
     buffer.change_cursor_position(cursor_x, cursor_y - 1);
 }
 
 pub fn down(buffer: &mut Buffer) {
     let cursor = buffer.cursor();
     let (cursor_x, cursor_y) = cursor.position();
-    if cursor_y == buffer.number_of_lines() - 1 {
+
+    if buffer.is_last_line() {
         return;
     }
+
+    if cursor_y == buffer.term_size().1 - 1 {
+        buffer.change_on_screen_range(1);
+        return;
+    }
+
     buffer.change_cursor_position(cursor_x, cursor_y + 1);
 }
